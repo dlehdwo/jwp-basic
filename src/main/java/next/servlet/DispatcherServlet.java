@@ -1,0 +1,57 @@
+package next.servlet;
+
+import next.controller.Controller;
+import next.controller.RequestMapping;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet(name = "dispatcher", urlPatterns = "/", loadOnStartup = 1)
+public class DispatcherServlet extends HttpServlet {
+
+    public static final Logger logger = LoggerFactory.getLogger(DispatcherServlet.class);
+    public static final String DEFAULT_REDIRECT_PREFIX = "redirect:";
+    public RequestMapping requestMapping;
+
+    @Override
+    public void init() throws ServletException {
+        requestMapping = new RequestMapping();
+        requestMapping.initMapping();
+    }
+
+    @Override
+    public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String requestURI = req.getRequestURI();
+        logger.debug("Method: {}, RequestURI: {}", req.getMethod(), requestURI);
+
+        Controller controller = requestMapping.getController(requestURI);
+        if (controller == null) {
+            return;
+        }
+
+        try {
+            String viewName = controller.execute(req, resp);
+            logger.debug("View name: {}", viewName);
+            move(viewName, req, resp);
+        } catch (Exception e) {
+            throw new ServletException(e.getMessage());
+        }
+    }
+
+    private void move(String viewName, HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        if (viewName.startsWith(DEFAULT_REDIRECT_PREFIX)) {
+            resp.sendRedirect(viewName.substring(DEFAULT_REDIRECT_PREFIX.length()));
+            return;
+        }
+
+        RequestDispatcher requestDispatcher = req.getRequestDispatcher(viewName);
+        requestDispatcher.forward(req, resp);
+    }
+}
