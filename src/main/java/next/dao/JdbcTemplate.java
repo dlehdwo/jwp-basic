@@ -9,7 +9,7 @@ import java.sql.SQLException;
 
 public class JdbcTemplate {
 
-    public void executeUpdate(String sql, PreparedStatementSetter pss) throws SQLException {;
+    public void executeUpdate(String sql, PreparedStatementSetter pss) {;
         Connection con = null;
         PreparedStatement pstmt = null;
         try {
@@ -18,18 +18,24 @@ public class JdbcTemplate {
             pss.setParameters(pstmt);
 
             pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DataAccessException(e);
         } finally {
-            if (pstmt != null) {
-                pstmt.close();
-            }
+            try {
+                if (pstmt != null) {
+                    pstmt.close();
+                }
 
-            if (con != null) {
-                con.close();
+                if (con != null) {
+                    con.close();
+                }
+            } catch (SQLException e) {
+                throw new DataAccessException(e);
             }
         }
     }
 
-    public <T> T executeQuery(String sql, RowMapper<T> rm, PreparedStatementSetter pss) throws SQLException {
+    public <T> T executeQuery(String sql, RowMapper<T> rm, PreparedStatementSetter pss) {
         Connection con = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
@@ -40,25 +46,31 @@ public class JdbcTemplate {
             pss.setParameters(pstmt);
             rs = pstmt.executeQuery();
             return rm.mapRow(rs);
+        } catch (SQLException e) {
+            throw new DataAccessException(e);
         } finally {
-            if (rs != null) {
-                rs.close();
-            }
-            if (pstmt != null) {
-                pstmt.close();
-            }
-            if (con != null) {
-                con.close();
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+                if (con != null) {
+                    con.close();
+                }
+            } catch (SQLException e) {
+                throw new DataAccessException(e);
             }
         }
     }
 
-    public void executeUpdate(String sql, Object... parameters) throws SQLException {;
+    public void executeUpdate(String sql, Object... parameters) {;
         PreparedStatementSetter pss = createPrepareStatementSetter(parameters);
         executeUpdate(sql, pss);
     }
 
-    public <T> T executeQuery(String sql, RowMapper<T> rm, Object... parameters) throws SQLException {
+    public <T> T executeQuery(String sql, RowMapper<T> rm, Object... parameters) {
         PreparedStatementSetter pss = createPrepareStatementSetter(parameters);
         return executeQuery(sql, rm, pss);
     }
